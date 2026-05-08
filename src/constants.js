@@ -14,18 +14,18 @@ export const SCREEN = {
 // Physics Constants
 export const PHYSICS = {
   GRAVITY: 0.6,           // pixels/frame²
-  JUMP_VELOCITY: -12,     // pixels/frame (negative = upward)
+  JUMP_VELOCITY: -10,     // pixels/frame (negative = upward)
   GHOST_START_X: 100,     // Fixed horizontal position
   GHOST_START_Y: 300      // Starting vertical position
 };
 
 // Pipe Constants
 export const PIPE = {
-  SPACING: 200,           // Horizontal distance between pipes (pixels)
+  SPACING: 250,           // Horizontal distance between pipes (pixels)
   WIDTH: 80,              // Pipe width (pixels)
-  GAP_SIZE: 120,          // Vertical gap size (pixels)
+  GAP_SIZE: 150,          // Vertical gap size (pixels)
   SPEED: 5,               // Leftward movement speed (pixels/frame)
-  CREATION_INTERVAL: 90,  // Frames between pipe creation (~1.5 seconds at 60 FPS)
+  CREATION_INTERVAL: 110, // Frames between pipe creation (~1.5 seconds at 60 FPS)
   MIN_GAP_Y: 50,          // Minimum gap Y position from top (pixels)
   MAX_GAP_Y_OFFSET: 50    // Offset from bottom for max gap position (pixels)
 };
