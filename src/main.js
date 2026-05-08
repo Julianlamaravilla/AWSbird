@@ -93,19 +93,57 @@ async function init() {
 }
 
 /**
+ * Ensure the AudioContext is unlocked exactly once on the first direct user
+ * gesture (click, touch, or key press).  Must be awaited inside an async
+ * handler so the browser counts it as a gesture-triggered resume.
+ */
+async function ensureAudioInitialized() {
+  if (!audioInitialized) {
+    console.log('Initializing audio on user interaction...');
+    const success = await game.initAudio();
+    audioInitialized = true;
+    if (!success) console.warn('Audio initialization failed');
+  }
+}
+
+/**
  * Handle keyboard shortcuts
  */
-function handleKeyPress(event) {
+async function handleKeyPress(event) {
   // Press 'P' to toggle performance stats display
   if (event.key === 'p' || event.key === 'P') {
     showPerformanceStats = !showPerformanceStats;
     console.log(`Performance stats display: ${showPerformanceStats ? 'ON' : 'OFF'}`);
   }
-  
+
   // Press 'R' to print performance report
   if (event.key === 'r' || event.key === 'R') {
     if (performanceMonitor) {
       performanceMonitor.printReport();
+    }
+  }
+
+  // Jump keys: also drive MENU → PLAYING and GAME_OVER → MENU transitions so
+  // the player can start or restart without touching the mouse/screen.
+  const JUMP_CODES = ['Space', 'ArrowUp', 'KeyW'];
+  if (JUMP_CODES.includes(event.code)) {
+    // Prevent Space / ArrowUp from scrolling the page.
+    if (event.code === 'Space' || event.code === 'ArrowUp') {
+      event.preventDefault();
+    }
+
+    // Ignore auto-repeat events while the key is held down.
+    if (event.repeat) return;
+
+    // Unlock AudioContext on the first direct key gesture (browser requirement).
+    await ensureAudioInitialized();
+
+    // Drive state transitions; PLAYING jump is handled by InputSystem.
+    const currentState = game.getState();
+    if (currentState === GAME_STATE.MENU) {
+      game.transitionToPlaying();
+    } else if (currentState === GAME_STATE.GAME_OVER) {
+      game.transitionToMenu();
     }
   }
 }
@@ -157,17 +195,7 @@ function getEventCoords(event) {
  * @param {MouseEvent|TouchEvent} event
  */
 async function handleMenuInteraction(event) {
-  if (!audioInitialized) {
-    console.log('Initializing audio on first user interaction...');
-    const success = await game.initAudio();
-    if (success) {
-      audioInitialized = true;
-      console.log('Audio initialized successfully');
-    } else {
-      console.warn('Audio initialization failed, continuing without audio');
-      audioInitialized = true;
-    }
-  }
+  await ensureAudioInitialized();
 
   const currentState = game.getState();
 
