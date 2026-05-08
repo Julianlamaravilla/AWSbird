@@ -12,15 +12,29 @@
  *                 synthetic "ghost click" that mobile browsers synthesise after
  *                 a touch, preventing a double-jump on the same tap.
  *   - Mouse     : click on canvas (desktop fallback / accessibility)
+ *
+ * Jump registration is intentionally restricted to the PLAYING state so that
+ * a tap on a menu button does not also trigger an immediate jump the moment
+ * the game transitions to PLAYING.
  */
+
+import { GAME_STATE } from './constants.js';
 
 // Keys that trigger a jump, matched against KeyboardEvent.code for
 // layout-independence (works on AZERTY, Dvorak, etc.).
 const JUMP_CODES = new Set(['Space', 'ArrowUp', 'KeyW']);
 
 export class InputSystem {
-  constructor(canvas) {
+  /**
+   * @param {HTMLCanvasElement} canvas
+   * @param {() => string} getGameState  Callback that returns the current
+   *   GAME_STATE value.  Defaults to a no-op so existing tests / callers that
+   *   don't pass a provider continue to work (jump is then always registered,
+   *   matching the original behaviour).
+   */
+  constructor(canvas, getGameState = () => GAME_STATE.PLAYING) {
     this.canvas = canvas;
+    this.getGameState = getGameState;
     this.jumpInputRegistered = false;
     this.initialized = false;
 
@@ -62,11 +76,15 @@ export class InputSystem {
 
   /**
    * Mouse click → jump (desktop / accessibility path).
+   * Only registers a jump during PLAYING so that clicking menu buttons does
+   * not also queue a phantom jump on the first game frame.
    * @param {MouseEvent} event
    */
   handleClick(event) {
     event.preventDefault();
-    this.jumpInputRegistered = true;
+    if (this.getGameState() === GAME_STATE.PLAYING) {
+      this.jumpInputRegistered = true;
+    }
   }
 
   /**
@@ -100,15 +118,21 @@ export class InputSystem {
    *     page scroll, and — critically — the synthetic ghost click (~300 ms
    *     delay) that mobile browsers fire after touchstart. Without this, a
    *     single tap would produce both a touchstart AND a click event, causing
-   *     a double-jump on the same frame.
+   *     a double-jump on the same frame.  preventDefault() is called
+   *     unconditionally so these protections are always active.
    *   - { passive: false }     : declared in addEventListener (see init()) so
    *     the browser actually honours our preventDefault() call.
+   *   - PLAYING guard          : jump registration is skipped outside of the
+   *     PLAYING state so that tapping a menu button in main.js does not also
+   *     queue a jump that fires the instant the game starts.
    *
    * @param {TouchEvent} event
    */
   handleTouchStart(event) {
     event.preventDefault();
-    this.jumpInputRegistered = true;
+    if (this.getGameState() === GAME_STATE.PLAYING) {
+      this.jumpInputRegistered = true;
+    }
   }
 
   // ---------------------------------------------------------------------------

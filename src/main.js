@@ -57,7 +57,10 @@ async function init() {
     // Initialize game systems
     game = new Game(canvas);
     renderer = new Renderer(canvas);
-    inputSystem = new InputSystem(canvas);
+    // Pass a game-state provider so InputSystem can restrict jump registration
+    // to the PLAYING state, preventing a phantom jump on the first touch after
+    // tapping a menu button.
+    inputSystem = new InputSystem(canvas, () => game.getState());
 
     // Initialize performance monitor
     performanceMonitor = new PerformanceMonitor(false); // Set to true for detailed profiling
@@ -65,8 +68,12 @@ async function init() {
     // Initialize input system
     inputSystem.init();
 
-    // Set up click handler for audio initialization and game state transitions
+    // Set up interaction handlers for audio initialization and state transitions.
+    // Both mouse (desktop) and touch (mobile) paths share handleCanvasClick.
+    // { passive: false } is required so that event.preventDefault() is honoured
+    // by the browser; without it, modern browsers silently ignore the call.
     canvas.addEventListener('click', handleCanvasClick);
+    canvas.addEventListener('touchstart', handleCanvasClick, { passive: false });
 
     // Set up keyboard shortcuts for performance monitoring
     window.addEventListener('keydown', handleKeyPress);
@@ -104,10 +111,52 @@ function handleKeyPress(event) {
 }
 
 /**
- * Handle canvas click for audio initialization and state transitions
+ * Normalize pointer coordinates from a MouseEvent or TouchEvent into
+ * canvas-local {x, y} values.
+ *
+ * For touch events we prefer touches[0] (finger still on screen) and fall
+ * back to changedTouches[0] (finger just lifted) so touchend also works if
+ * ever needed.
+ *
+ * CSS scaling is accounted for: when the canvas element is resized via CSS its
+ * logical pixel dimensions (canvas.width / canvas.height) may differ from its
+ * rendered size (rect.width / rect.height).  Without scaling, touch/click
+ * coordinates would miss the hit-test regions whenever the canvas is scaled.
+ *
+ * @param {MouseEvent|TouchEvent} event
+ * @returns {{ x: number, y: number }}
  */
-async function handleCanvasClick(event) {
-  // Initialize audio on first user interaction (browser requirement)
+function getEventCoords(event) {
+  const rect = canvas.getBoundingClientRect();
+  let clientX, clientY;
+
+  if (event.touches && event.touches.length > 0) {
+    clientX = event.touches[0].clientX;
+    clientY = event.touches[0].clientY;
+  } else if (event.changedTouches && event.changedTouches.length > 0) {
+    clientX = event.changedTouches[0].clientX;
+    clientY = event.changedTouches[0].clientY;
+  } else {
+    clientX = event.clientX;
+    clientY = event.clientY;
+  }
+
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const x = (clientX - rect.left) * scaleX;
+  const y = (clientY - rect.top) * scaleY;
+
+  return { x, y };
+}
+
+/**
+ * Shared logic for menu-button interactions triggered by either a mouse click
+ * or a touchstart event.  Initializes audio on the first gesture (browser
+ * requirement) and drives MENU → PLAYING and GAME_OVER → MENU transitions.
+ *
+ * @param {MouseEvent|TouchEvent} event
+ */
+async function handleMenuInteraction(event) {
   if (!audioInitialized) {
     console.log('Initializing audio on first user interaction...');
     const success = await game.initAudio();
@@ -116,59 +165,72 @@ async function handleCanvasClick(event) {
       console.log('Audio initialized successfully');
     } else {
       console.warn('Audio initialization failed, continuing without audio');
-      audioInitialized = true; // Set to true to prevent repeated attempts
+      audioInitialized = true;
     }
   }
-  
-  // Handle state transitions based on current game state
+
   const currentState = game.getState();
-  
+
   if (currentState === GAME_STATE.MENU) {
-    // Check if click is on "Start Game" button
     if (isClickOnStartButton(event)) {
       game.transitionToPlaying();
     }
   } else if (currentState === GAME_STATE.GAME_OVER) {
-    // Check if click is on "Restart" button
     if (isClickOnRestartButton(event)) {
       game.transitionToMenu();
     }
   }
-  // Note: Jump input during PLAYING state is handled by InputSystem
+  // Jump input during PLAYING state is handled exclusively by InputSystem.
 }
 
 /**
- * Check if click is on Start Game button (Menu state)
+ * Handle canvas interaction from either a mouse click or a touchstart.
+ *
+ * For touchstart we call event.preventDefault() to suppress the ~300 ms
+ * synthetic ghost-click that mobile browsers would otherwise fire after the
+ * touch, which would trigger a double interaction on the same tap.
+ * The listener is registered with { passive: false } (see init()) so the
+ * browser actually honours the preventDefault() call.
+ *
+ * @param {MouseEvent|TouchEvent} event
+ */
+function handleCanvasClick(event) {
+  if (event.type === 'touchstart') {
+    event.preventDefault();
+  }
+  handleMenuInteraction(event);
+}
+
+/**
+ * Check if the interaction hit the Start Game button (Menu state).
+ * @param {MouseEvent|TouchEvent} event
  */
 function isClickOnStartButton(event) {
-  const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-  
-  // Button dimensions (from Renderer.drawMenu)
+  const { x, y } = getEventCoords(event);
+
+  // Button dimensions mirror Renderer.drawMenu
   const buttonWidth = 200;
   const buttonHeight = 50;
   const buttonX = SCREEN.WIDTH / 2 - buttonWidth / 2;
   const buttonY = SCREEN.HEIGHT / 2 - buttonHeight / 2;
-  
+
   return x >= buttonX && x <= buttonX + buttonWidth &&
          y >= buttonY && y <= buttonY + buttonHeight;
 }
 
 /**
- * Check if click is on Restart button (GameOver state)
+ * Check if the interaction hit the Restart button (GameOver state).
+ * @param {MouseEvent|TouchEvent} event
  */
 function isClickOnRestartButton(event) {
-  const rect = canvas.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-  
-  // Button dimensions (from Renderer.drawGameOver)
+  const { x, y } = getEventCoords(event);
+
+  // Button dimensions mirror Renderer.drawGameOver
   const buttonWidth = 200;
   const buttonHeight = 50;
   const buttonX = SCREEN.WIDTH / 2 - buttonWidth / 2;
   const buttonY = SCREEN.HEIGHT / 2 + 50;
-  
+
   return x >= buttonX && x <= buttonX + buttonWidth &&
          y >= buttonY && y <= buttonY + buttonHeight;
 }
