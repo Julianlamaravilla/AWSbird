@@ -12,18 +12,16 @@ import { Renderer } from './renderer.js';
 import { InputSystem } from './input.js';
 import { PerformanceMonitor } from './performance.js';
 
-// Get canvas element
-const canvas = document.getElementById('gameCanvas');
-
-// Get UI elements
-const loadingScreen = document.getElementById('loadingScreen');
-const errorScreen = document.getElementById('errorScreen');
-const errorMessage = document.getElementById('errorMessage');
-
 // Game systems
 let game = null;
 let renderer = null;
 let inputSystem = null;
+
+// DOM elements — populated inside init() after DOMContentLoaded
+let canvas = null;
+let loadingScreen = null;
+let errorScreen = null;
+let errorMessage = null;
 
 // Performance monitoring
 let performanceMonitor = null;
@@ -34,45 +32,53 @@ let lastTimestamp = 0;
 let audioInitialized = false;
 
 /**
- * Initialize the game
+ * Initialize the game.
+ * Called only after DOMContentLoaded so all DOM elements and ES module
+ * bindings are guaranteed to be fully initialized.
  */
 async function init() {
+  // Query DOM elements here — safe because DOMContentLoaded has already fired
+  canvas = document.getElementById('gameCanvas');
+  loadingScreen = document.getElementById('loadingScreen');
+  errorScreen = document.getElementById('errorScreen');
+  errorMessage = document.getElementById('errorMessage');
+
   try {
     console.log('Initializing Flappy Kiro...');
-    
+
     // Load all assets
     await AssetLoader.loadAssets();
-    
+
     // Verify assets are ready
     if (!AssetLoader.isReady()) {
       throw new Error('Assets failed to load properly');
     }
-    
+
     // Initialize game systems
     game = new Game(canvas);
     renderer = new Renderer(canvas);
     inputSystem = new InputSystem(canvas);
-    
+
     // Initialize performance monitor
     performanceMonitor = new PerformanceMonitor(false); // Set to true for detailed profiling
-    
+
     // Initialize input system
     inputSystem.init();
-    
+
     // Set up click handler for audio initialization and game state transitions
     canvas.addEventListener('click', handleCanvasClick);
-    
+
     // Set up keyboard shortcuts for performance monitoring
     window.addEventListener('keydown', handleKeyPress);
-    
+
     // Hide loading screen
     loadingScreen.classList.add('hidden');
-    
+
     console.log('Game initialized successfully');
-    
+
     // Start game loop
     startGameLoop();
-    
+
   } catch (error) {
     console.error('Failed to initialize game:', error);
     showError('Failed to load game assets. Please refresh the page.');
@@ -280,13 +286,16 @@ function renderPerformanceStats() {
   ctx.restore();
 }
 
-// Start the game when the page loads
-window.addEventListener('load', init);
+// Start the game once the DOM is fully parsed.
+// <script type="module"> is deferred by the browser, so DOMContentLoaded has
+// not yet fired when this module evaluates — the listener below will always
+// trigger correctly, regardless of where the script tag appears in the HTML.
+window.addEventListener('DOMContentLoaded', init);
 
 // Handle window focus/blur for pause functionality
 window.addEventListener('blur', () => {
   console.log('Game window lost focus');
-  // Note: Game continues running but with capped deltaTime to prevent physics jumps
+  // Game continues running but with capped deltaTime to prevent physics jumps
 });
 
 window.addEventListener('focus', () => {

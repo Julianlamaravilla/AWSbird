@@ -17,7 +17,17 @@ export default defineConfig({
     assetsDir: 'assets',
     sourcemap: true,
     minify: 'esbuild',
-    target: 'es2015'
+    // es2020 supports static class fields natively, preventing esbuild from
+    // wrapping classes in IIFEs with const bindings that create TDZ issues.
+    // All modern browsers (Chrome 80+, Firefox 75+, Safari 14+) support es2020.
+    target: 'es2020',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+        inlineDynamicImports: false,
+        format: 'es'
+      }
+    }
   },
   
   // Asset handling
