@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Main Game Loop Integration Test</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #2c3e50;
+      font-family: Arial, sans-serif;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    #gameContainer {
+      position: relative;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    #gameCanvas {
+      display: block;
+      background-color: #87CEEB;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+    }
+
+    #testResults {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      max-width: 800px;
+      width: 100%;
+    }
+
+    #testResults h2 {
+      margin-bottom: 15px;
+      color: #2c3e50;
+    }
+
+    .test-item {
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .test-item.pass {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .test-item.fail {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .test-item.info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .status {
+      font-weight: bold;
+    }
+
+    #loadingScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #87CEEB;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-size: 24px;
+    }
+
+    #loadingScreen.hidden {
+      display: none;
+    }
+
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      border-top: 4px solid white;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    #errorScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #87CEEB;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+
+    #errorScreen.visible {
+      display: flex;
+    }
+
+    #errorScreen h2 {
+      font-size: 32px;
+      margin-bottom: 20px;
+      color: #ff6b6b;
+    }
+
+    #errorScreen p {
+      font-size: 18px;
+      margin-bottom: 30px;
+    }
+
+    #errorScreen button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    #errorScreen button:hover {
+      background-color: #45a049;
+    }
+
+    #instructions {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      max-width: 800px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    #instructions h3 {
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    #instructions ol {
+      margin-left: 20px;
+    }
+
+    #instructions li {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="instructions">
+    <h3>Main Game Loop Integration Test Instructions</h3>
+    <ol>
+      <li>Wait for assets to load (loading screen will disappear)</li>
+      <li>Observe the Menu screen with "Start Game" button</li>
+      <li>Click "Start Game" to transition to Playing state</li>
+      <li>Click/tap to make the ghost jump</li>
+      <li>Observe pipes moving, score incrementing, and collision detection</li>
+      <li>When game over occurs, click "Restart" to return to Menu</li>
+      <li>Check test results below for system verification</li>
+    </ol>
+  </div>
+
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    
+    <div id="loadingScreen">
+      <div class="spinner"></div>
+      <p>Loading Flappy Kiro...</p>
+    </div>
+
+    <div id="errorScreen">
+      <h2>Error Loading Game</h2>
+      <p id="errorMessage">Failed to load game assets. Please check your connection and try again.</p>
+      <button onclick="location.reload()">Retry</button>
+    </div>
+  </div>
+
+  <div id="testResults">
+    <h2>Integration Test Results</h2>
+    <div id="testList"></div>
+  </div>
+
+  <script type="module">
+    import { SCREEN, GAME_STATE } from './src/constants.js';
+    import { AssetLoader } from './src/assets.js';
+    import { Game } from './src/game.js';
+    import { Renderer } from './src/renderer.js';
+    import { InputSystem } from './src/input.js';
+
+    // Test results tracking
+    const testResults = [];
+
+    function addTestResult(name, passed, details = '') {
+      testResults.push({ name, passed, details });
+      updateTestDisplay();
+    }
+
+    function updateTestDisplay() {
+      const testList = document.getElementById('testList');
+      testList.innerHTML = '';
+
+      for (const result of testResults) {
+        const div = document.createElement('div');
+        div.className = `test-item ${result.passed ? 'pass' : 'fail'}`;
+        div.innerHTML = `
+          <span>${result.name}</span>
+          <span class="status">${result.passed ? '✓ PASS' : '✗ FAIL'}</span>
+        `;
+        if (result.details) {
+          div.title = result.details;
+        }
+        testList.appendChild(div);
+      }
+    }
+
+    // Get canvas element
+    const canvas = document.getElementById('gameCanvas');
+
+    // Get UI elements
+    const loadingScreen = document.getElementById('loadingScreen');
+    const errorScreen = document.getElementById('errorScreen');
+    const errorMessage = document.getElementById('errorMessage');
+
+    // Game systems
+    let game = null;
+    let renderer = null;
+    let inputSystem = null;
+
+    // Game loop state
+    let lastTimestamp = 0;
+    let audioInitialized = false;
+
+    // Test tracking
+    let frameCount = 0;
+    let updateCount = 0;
+    let renderCount = 0;
+    let lastFPSCheck = 0;
+    let fps = 0;
+
+    /**
+     * Initialize the game
+     */
+    async function init() {
+      try {
+        console.log('Initializing Flappy Kiro...');
+        
+        // Load all assets
+        await AssetLoader.loadAssets();
+        addTestResult('Asset Loading', AssetLoader.isReady(), 'All game assets loaded successfully');
+        
+        // Verify assets are ready
+        if (!AssetLoader.isReady()) {
+          throw new Error('Assets failed to load properly');
+        }
+        
+        // Initialize game systems
+        game = new Game(canvas);
+        renderer = new Renderer(canvas);
+        inputSystem = new InputSystem(canvas);
+        
+        addTestResult('Game System Initialization', game !== null, 'Game instance created');
+        addTestResult('Renderer Initialization', renderer !== null, 'Renderer instance created');
+        addTestResult('Input System Initialization', inputSystem !== null, 'InputSystem instance created');
+        
+        // Initialize input system
+        inputSystem.init();
+        
+        // Set up click handler for audio initialization and game state transitions
+        canvas.addEventListener('click', handleCanvasClick);
+        
+        // Hide loading screen
+        loadingScreen.classList.add('hidden');
+        
+        console.log('Game initialized successfully');
+        addTestResult('Initialization Complete', true, 'All systems initialized');
+        
+        // Verify initial state
+        const initialState = game.getState();
+        addTestResult('Initial State is Menu', initialState === GAME_STATE.MENU, `State: ${initialState}`);
+        
+        // Start game loop
+        startGameLoop();
+        
+      } catch (error) {
+        console.error('Failed to initialize game:', error);
+        addTestResult('Initialization', false, error.message);
+        showError('Failed to load game assets. Please refresh the page.');
+      }
+    }
+
+    /**
+     * Handle canvas click for audio initialization and state transitions
+     */
+    async function handleCanvasClick(event) {
+      // Initialize audio on first user interaction (browser requirement)
+      if (!audioInitialized) {
+        console.log('Initializing audio on first user interaction...');
+        const success = await game.initAudio();
+        audioInitialized = true;
+        addTestResult('Audio Initialization', success, success ? 'Audio initialized on first click' : 'Audio initialization failed (continuing without audio)');
+      }
+      
+      // Handle state transitions based on current game state
+      const currentState = game.getState();
+      
+      if (currentState === GAME_STATE.MENU) {
+        // Check if click is on "Start Game" button
+        if (isClickOnStartButton(event)) {
+          game.transitionToPlaying();
+          addTestResult('Menu → Playing Transition', game.getState() === GAME_STATE.PLAYING, 'State transition successful');
+        }
+      } else if (currentState === GAME_STATE.GAME_OVER) {
+        // Check if click is on "Restart" button
+        if (isClickOnRestartButton(event)) {
+          game.transitionToMenu();
+          addTestResult('GameOver → Menu Transition', game.getState() === GAME_STATE.MENU, 'State transition successful');
+        }
+      }
+    }
+
+    /**
+     * Check if click is on Start Game button (Menu state)
+     */
+    function isClickOnStartButton(event) {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      const buttonWidth = 200;
+      const buttonHeight = 50;
+      const buttonX = SCREEN.WIDTH / 2 - buttonWidth / 2;
+      const buttonY = SCREEN.HEIGHT / 2 - buttonHeight / 2;
+      
+      return x >= buttonX && x <= buttonX + buttonWidth &&
+             y >= buttonY && y <= buttonY + buttonHeight;
+    }
+
+    /**
+     * Check if click is on Restart button (GameOver state)
+     */
+    function isClickOnRestartButton(event) {
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      
+      const buttonWidth = 200;
+      const buttonHeight = 50;
+      const buttonX = SCREEN.WIDTH / 2 - buttonWidth / 2;
+      const buttonY = SCREEN.HEIGHT / 2 + 50;
+      
+      return x >= buttonX && x <= buttonX + buttonWidth &&
+             y >= buttonY && y <= buttonY + buttonHeight;
+    }
+
+    /**
+     * Show error screen
+     */
+    function showError(message) {
+      loadingScreen.classList.add('hidden');
+      errorMessage.textContent = message;
+      errorScreen.classList.add('visible');
+    }
+
+    /**
+     * Main game loop - runs at 60 FPS
+     */
+    function gameLoop(timestamp) {
+      // Calculate delta time in seconds
+      const deltaTime = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+      
+      // Cap delta time to prevent large jumps
+      const cappedDeltaTime = Math.min(deltaTime, 0.1);
+      
+      // Update game state
+      update(cappedDeltaTime);
+      updateCount++;
+      
+      // Render frame
+      render();
+      renderCount++;
+      
+      // Track FPS
+      frameCount++;
+      if (timestamp - lastFPSCheck >= 1000) {
+        fps = frameCount;
+        frameCount = 0;
+        lastFPSCheck = timestamp;
+        
+        // Test FPS after 2 seconds
+        if (timestamp > 2000 && testResults.filter(r => r.name === 'Frame Rate (60 FPS Target)').length === 0) {
+          addTestResult('Frame Rate (60 FPS Target)', fps >= 55 && fps <= 65, `Current FPS: ${fps}`);
+        }
+      }
+      
+      // Test update/render calls after 1 second
+      if (timestamp > 1000 && testResults.filter(r => r.name === 'Update Loop Running').length === 0) {
+        addTestResult('Update Loop Running', updateCount > 50, `Updates: ${updateCount}`);
+        addTestResult('Render Loop Running', renderCount > 50, `Renders: ${renderCount}`);
+      }
+      
+      // Continue loop
+      requestAnimationFrame(gameLoop);
+    }
+
+    /**
+     * Start the game loop
+     */
+    function startGameLoop() {
+      requestAnimationFrame((timestamp) => {
+        lastTimestamp = timestamp;
+        lastFPSCheck = timestamp;
+        requestAnimationFrame(gameLoop);
+      });
+    }
+
+    /**
+     * Update game state each frame
+     */
+    function update(deltaTime) {
+      // Get jump input from input system
+      const jumpInput = inputSystem.getJumpInput();
+      
+      // Update game logic
+      game.update(deltaTime, jumpInput);
+      
+      // Reset input state after processing
+      inputSystem.reset();
+    }
+
+    /**
+     * Render the game each frame
+     */
+    function render() {
+      // Get current game state and data
+      const gameState = game.getState();
+      const ghostPos = game.getGhostPosition();
+      const pipes = game.getPipes();
+      const score = game.getCurrentScore();
+      const highScore = game.getHighScore();
+      
+      // Render entire frame
+      renderer.render(gameState, ghostPos, pipes, score, highScore);
+    }
+
+    // Start the game when the page loads
+    window.addEventListener('load', init);
+
+    // Handle window focus/blur
+    window.addEventListener('blur', () => {
+      console.log('Game window lost focus');
+    });
+
+    window.addEventListener('focus', () => {
+      console.log('Game window gained focus');
+      lastTimestamp = performance.now();
+    });
+  </script>
+</body>
+</html>

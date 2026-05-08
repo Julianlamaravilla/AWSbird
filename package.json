@@ -1,0 +1,29 @@
+{
+  "name": "flappy-kiro",
+  "version": "1.0.0",
+  "description": "A browser-based endless scroller game inspired by classic arcade gameplay",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "game",
+    "flappy",
+    "arcade",
+    "canvas",
+    "javascript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@fast-check/vitest": "^0.4.1",
+    "jsdom": "^29.1.1",
+    "vite": "^5.0.0",
+    "vitest": "^4.1.5"
+  }
+}

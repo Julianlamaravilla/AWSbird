@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asset Loader Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    .test-result {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+    }
+  </style>
+</head>
+<body>
+  <h1>Asset Loader Test</h1>
+  <div id="results"></div>
+
+  <script type="module">
+    import { AssetLoader } from './src/assets.js';
+
+    const resultsDiv = document.getElementById('results');
+
+    function addResult(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `test-result ${type}`;
+      div.textContent = message;
+      resultsDiv.appendChild(div);
+    }
+
+    async function runTests() {
+      addResult('Starting asset loading tests...', 'info');
+
+      try {
+        // Test 1: Load assets
+        addResult('Test 1: Loading assets...', 'info');
+        await AssetLoader.loadAssets();
+        addResult('✓ Test 1 PASSED: Assets loaded successfully', 'success');
+
+        // Test 2: Check if ready
+        addResult('Test 2: Checking if assets are ready...', 'info');
+        if (AssetLoader.isReady()) {
+          addResult('✓ Test 2 PASSED: AssetLoader.isReady() returns true', 'success');
+        } else {
+          addResult('✗ Test 2 FAILED: AssetLoader.isReady() returns false', 'error');
+        }
+
+        // Test 3: Get ghost sprite
+        addResult('Test 3: Getting ghost sprite...', 'info');
+        const ghostSprite = AssetLoader.getAsset('ghostSprite');
+        if (ghostSprite && ghostSprite instanceof HTMLImageElement) {
+          addResult(`✓ Test 3 PASSED: Ghost sprite loaded (${ghostSprite.width}x${ghostSprite.height})`, 'success');
+        } else {
+          addResult('✗ Test 3 FAILED: Ghost sprite not loaded', 'error');
+        }
+
+        // Test 4: Get jump sound
+        addResult('Test 4: Getting jump sound...', 'info');
+        const jumpSound = AssetLoader.getAsset('jumpSound');
+        if (jumpSound && jumpSound instanceof HTMLAudioElement) {
+          addResult(`✓ Test 4 PASSED: Jump sound loaded (${jumpSound.duration.toFixed(2)}s)`, 'success');
+        } else {
+          addResult('✗ Test 4 FAILED: Jump sound not loaded', 'error');
+        }
+
+        // Test 5: Get game over sound
+        addResult('Test 5: Getting game over sound...', 'info');
+        const gameOverSound = AssetLoader.getAsset('gameOverSound');
+        if (gameOverSound && gameOverSound instanceof HTMLAudioElement) {
+          addResult(`✓ Test 5 PASSED: Game over sound loaded (${gameOverSound.duration.toFixed(2)}s)`, 'success');
+        } else {
+          addResult('✗ Test 5 FAILED: Game over sound not loaded', 'error');
+        }
+
+        // Test 6: Get non-existent asset
+        addResult('Test 6: Getting non-existent asset...', 'info');
+        const nonExistent = AssetLoader.getAsset('nonExistent');
+        if (nonExistent === null) {
+          addResult('✓ Test 6 PASSED: Returns null for non-existent asset', 'success');
+        } else {
+          addResult('✗ Test 6 FAILED: Should return null for non-existent asset', 'error');
+        }
+
+        addResult('All tests completed!', 'success');
+
+      } catch (error) {
+        addResult(`✗ FATAL ERROR: ${error.message}`, 'error');
+        console.error('Test error:', error);
+      }
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

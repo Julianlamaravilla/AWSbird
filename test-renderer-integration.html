@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renderer Integration Test - Flappy Kiro</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #2c3e50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: white;
+    }
+    
+    h1 {
+      margin-bottom: 10px;
+    }
+    
+    .info {
+      background-color: #34495e;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      max-width: 800px;
+    }
+    
+    canvas {
+      border: 3px solid #ecf0f1;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    button:hover {
+      background-color: #2980b9;
+    }
+    
+    button:active {
+      background-color: #1c5985;
+    }
+    
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #27ae60;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 Renderer Integration Test</h1>
+  
+  <div class="info">
+    <strong>Integration Test:</strong> This test verifies that the Renderer works correctly with 
+    Physics Engine, Pipe Generator, and Score Tracker. Click the buttons below to cycle through 
+    different game states and see live rendering.
+  </div>
+  
+  <canvas id="game-canvas"></canvas>
+  
+  <div class="controls">
+    <button id="btn-menu">Show Menu</button>
+    <button id="btn-playing">Show Playing</button>
+    <button id="btn-gameover">Show Game Over</button>
+    <button id="btn-animate">Animate (60 FPS)</button>
+    <button id="btn-stop">Stop Animation</button>
+  </div>
+  
+  <div class="status" id="status">Ready</div>
+  
+  <script type="module">
+    import { Renderer } from './src/renderer.js';
+    import { PhysicsEngine } from './src/physics.js';
+    import { PipeGenerator } from './src/pipes.js';
+    import { ScoreTracker } from './src/score.js';
+    import { AssetLoader } from './src/assets.js';
+    import { GAME_STATE } from './src/constants.js';
+    
+    console.log('=== Renderer Integration Test ===\n');
+    
+    let renderer, physics, pipeGenerator, scoreTracker;
+    let animationId = null;
+    let currentState = GAME_STATE.MENU;
+    
+    async function init() {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = 'Loading assets...';
+      
+      try {
+        await AssetLoader.loadAssets();
+        console.log('✓ Assets loaded');
+        statusEl.textContent = 'Assets loaded successfully';
+      } catch (error) {
+        console.error('✗ Failed to load assets:', error);
+        statusEl.textContent = 'Failed to load assets';
+        statusEl.style.backgroundColor = '#e74c3c';
+        return;
+      }
+      
+      // Initialize components
+      const canvas = document.getElementById('game-canvas');
+      renderer = new Renderer(canvas);
+      physics = new PhysicsEngine();
+      pipeGenerator = new PipeGenerator();
+      scoreTracker = new ScoreTracker();
+      
+      console.log('✓ All components initialized');
+      statusEl.textContent = 'Ready - Click buttons to test';
+      statusEl.style.backgroundColor = '#27ae60';
+      
+      // Set up button handlers
+      document.getElementById('btn-menu').addEventListener('click', showMenu);
+      document.getElementById('btn-playing').addEventListener('click', showPlaying);
+      document.getElementById('btn-gameover').addEventListener('click', showGameOver);
+      document.getElementById('btn-animate').addEventListener('click', startAnimation);
+      document.getElementById('btn-stop').addEventListener('click', stopAnimation);
+      
+      // Initial render
+      showMenu();
+    }
+    
+    function showMenu() {
+      stopAnimation();
+      currentState = GAME_STATE.MENU;
+      
+      renderer.render(
+        GAME_STATE.MENU,
+        physics.getPosition(),
+        [],
+        0,
+        scoreTracker.getHighScore()
+      );
+      
+      document.getElementById('status').textContent = 'State: MENU';
+      console.log('Showing menu state');
+    }
+    
+    function showPlaying() {
+      stopAnimation();
+      currentState = GAME_STATE.PLAYING;
+      
+      // Reset and create some pipes
+      physics.reset();
+      pipeGenerator.reset();
+      scoreTracker.reset();
+      
+      // Create a few pipes manually for static display
+      for (let i = 0; i < 3; i++) {
+        pipeGenerator.createPipe();
+        for (let j = 0; j < 30; j++) {
+          pipeGenerator.update(0.016);
+        }
+      }
+      
+      renderer.render(
+        GAME_STATE.PLAYING,
+        physics.getPosition(),
+        pipeGenerator.getPipes(),
+        scoreTracker.getCurrentScore(),
+        scoreTracker.getHighScore()
+      );
+      
+      document.getElementById('status').textContent = 'State: PLAYING (static)';
+      console.log('Showing playing state');
+    }
+    
+    function showGameOver() {
+      stopAnimation();
+      currentState = GAME_STATE.GAME_OVER;
+      
+      renderer.render(
+        GAME_STATE.GAME_OVER,
+        physics.getPosition(),
+        pipeGenerator.getPipes(),
+        scoreTracker.getCurrentScore(),
+        scoreTracker.getHighScore()
+      );
+      
+      document.getElementById('status').textContent = 'State: GAME OVER';
+      console.log('Showing game over state');
+    }
+    
+    function startAnimation() {
+      if (animationId !== null) return;
+      
+      // Reset everything
+      physics.reset();
+      pipeGenerator.reset();
+      scoreTracker.reset();
+      currentState = GAME_STATE.PLAYING;
+      
+      let lastTime = performance.now();
+      let frameCount = 0;
+      
+      function animate(currentTime) {
+        const deltaTime = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+        frameCount++;
+        
+        // Update physics
+        physics.update(deltaTime);
+        
+        // Update pipes
+        pipeGenerator.update(deltaTime);
+        
+        // Update score
+        scoreTracker.update(physics.getPosition(), pipeGenerator.getPipes());
+        
+        // Render
+        renderer.render(
+          GAME_STATE.PLAYING,
+          physics.getPosition(),
+          pipeGenerator.getPipes(),
+          scoreTracker.getCurrentScore(),
+          scoreTracker.getHighScore()
+        );
+        
+        // Update status every 60 frames (~1 second)
+        if (frameCount % 60 === 0) {
+          document.getElementById('status').textContent = 
+            `Animating at 60 FPS | Score: ${scoreTracker.getCurrentScore()} | Pipes: ${pipeGenerator.getPipes().length}`;
+        }
+        
+        animationId = requestAnimationFrame(animate);
+      }
+      
+      animationId = requestAnimationFrame(animate);
+      console.log('Started animation');
+      document.getElementById('status').textContent = 'Animating at 60 FPS...';
+    }
+    
+    function stopAnimation() {
+      if (animationId !== null) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+        console.log('Stopped animation');
+      }
+    }
+    
+    init();
+  </script>
+</body>
+</html>

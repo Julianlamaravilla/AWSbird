@@ -14,18 +14,18 @@ This document outlines the implementation tasks for building Flappy Kiro. Tasks 
 
 ## Phase 1: Project Setup and Core Infrastructure
 
-### Task 1: Project Structure and Build Configuration
+### Task 1: Project Structure and Build Configuration ✅
 
 **Description**: Set up the project directory structure, create HTML entry point, and configure build tools.
 
 **Acceptance Criteria**:
-- [ ] Create `index.html` with canvas element (800x600)
-- [ ] Create `src/` directory with module structure
-- [ ] Create `assets/` directory for sprites and audio
-- [ ] Set up `package.json` with dependencies (if using npm)
-- [ ] Configure build process (webpack, vite, or simple HTTP server)
-- [ ] Verify game loads in browser without errors
-- [ ] Canvas renders with light blue background (#87CEEB)
+- [x] Create `index.html` with canvas element (800x600)
+- [x] Create `src/` directory with module structure
+- [x] Create `assets/` directory for sprites and audio
+- [x] Set up `package.json` with dependencies (if using npm)
+- [x] Configure build process (webpack, vite, or simple HTTP server)
+- [x] Verify game loads in browser without errors
+- [x] Canvas renders with light blue background (#87CEEB)
 
 **Dependencies**: None
 
@@ -35,19 +35,19 @@ This document outlines the implementation tasks for building Flappy Kiro. Tasks 
 
 ---
 
-### Task 2: Asset Loading System
+### Task 2: Asset Loading System ✅
 
 **Description**: Implement asset loader to load sprites and audio files before game starts.
 
 **Acceptance Criteria**:
-- [ ] Create `src/assets.js` with AssetLoader class
-- [ ] Load `ghosty.png` sprite (32x32)
-- [ ] Load `jump.wav` audio file
-- [ ] Load `game_over.wav` audio file
-- [ ] Display loading screen while assets load
-- [ ] Display error message if asset fails to load
-- [ ] Prevent game from starting until all assets loaded
-- [ ] Log loaded assets to console
+- [x] Create `src/assets.js` with AssetLoader class
+- [x] Load `ghosty.png` sprite (32x32)
+- [x] Load `jump.wav` audio file
+- [x] Load `game_over.wav` audio file
+- [x] Display loading screen while assets load
+- [x] Display error message if asset fails to load
+- [x] Prevent game from starting until all assets loaded
+- [x] Log loaded assets to console
 
 **Dependencies**: Task 1
 
@@ -59,19 +59,19 @@ This document outlines the implementation tasks for building Flappy Kiro. Tasks 
 
 ---
 
-### Task 3: Constants and Configuration
+### Task 3: Constants and Configuration ✅
 
 **Description**: Define all game constants and configuration values in a centralized location.
 
 **Acceptance Criteria**:
-- [ ] Create `src/constants.js` with all game constants
-- [ ] Define physics constants (gravity, jump velocity)
-- [ ] Define pipe constants (spacing, width, gap size, speed)
-- [ ] Define screen dimensions (800x600)
-- [ ] Define color palette (background, pipes, ghost, UI)
-- [ ] Define animation timings
-- [ ] Define audio volumes
-- [ ] All constants match design specifications
+- [x] Create `src/constants.js` with all game constants
+- [x] Define physics constants (gravity, jump velocity)
+- [x] Define pipe constants (spacing, width, gap size, speed)
+- [x] Define screen dimensions (800x600)
+- [x] Define color palette (background, pipes, ghost, UI)
+- [x] Define animation timings
+- [x] Define audio volumes
+- [x] All constants match design specifications
 
 **Dependencies**: Task 1
 
@@ -85,21 +85,21 @@ This document outlines the implementation tasks for building Flappy Kiro. Tasks 
 
 ## Phase 2: Core Game Systems
 
-### Task 4: Physics Engine
+### Task 4: Physics Engine ✅
 
 **Description**: Implement physics engine for ghost movement, gravity, and jumping.
 
 **Acceptance Criteria**:
-- [ ] Create `src/physics.js` with PhysicsEngine class
-- [ ] Apply gravity each frame (0.6 pixels/frame²)
-- [ ] Update velocity based on gravity
-- [ ] Update position based on velocity
-- [ ] Implement `applyJump()` method (-12 pixels/frame)
-- [ ] Implement `getPosition()` and `getVelocity()` methods
-- [ ] Implement `reset()` method
-- [ ] Ghost starts at position (100, 300)
-- [ ] Verify gravity increases velocity monotonically (Property 1)
-- [ ] Verify jump velocity is consistent (Property 2)
+- [x] Create `src/physics.js` with PhysicsEngine class
+- [x] Apply gravity each frame (0.6 pixels/frame²)
+- [x] Update velocity based on gravity
+- [x] Update position based on velocity
+- [x] Implement `applyJump()` method (-12 pixels/frame)
+- [x] Implement `getPosition()` and `getVelocity()` methods
+- [x] Implement `reset()` method
+- [x] Ghost starts at position (100, 300)
+- [x] Verify gravity increases velocity monotonically (Property 1)
+- [x] Verify jump velocity is consistent (Property 2)
 
 **Dependencies**: Task 3
 
@@ -111,23 +111,23 @@ This document outlines the implementation tasks for building Flappy Kiro. Tasks 
 
 ---
 
-### Task 5: Pipe Generator
+### Task 5: Pipe Generator ✅
 
 **Description**: Implement pipe generation system that creates pipes at regular intervals with random gap positions.
 
 **Acceptance Criteria**:
-- [ ] Create `src/pipes.js` with PipeGenerator class
-- [ ] Create pipes at regular intervals (90 frames / ~1.5 seconds)
-- [ ] Position pipes off-screen to the right
-- [ ] Randomly vary gap position within valid bounds
-- [ ] Move pipes leftward at constant speed (5 pixels/frame)
-- [ ] Remove off-screen pipes from memory
-- [ ] Implement `getPipes()` method
-- [ ] Implement `reset()` method
-- [ ] Verify pipe spacing is consistent (Property 4)
-- [ ] Verify gap position is valid (Property 5)
-- [ ] Verify pipes move leftward (Property 3)
-- [ ] Verify endless pipe generation (Property 11)
+- [x] Create `src/pipes.js` with PipeGenerator class
+- [x] Create pipes at regular intervals (90 frames / ~1.5 seconds)
+- [x] Position pipes off-screen to the right
+- [x] Randomly vary gap position within valid bounds
+- [x] Move pipes leftward at constant speed (5 pixels/frame)
+- [x] Remove off-screen pipes from memory
+- [x] Implement `getPipes()` method
+- [x] Implement `reset()` method
+- [x] Verify pipe spacing is consistent (Property 4)
+- [x] Verify gap position is valid (Property 5)
+- [x] Verify pipes move leftward (Property 3)
+- [x] Verify endless pipe generation (Property 11)
 
 **Dependencies**: Task 3
 
@@ -139,20 +139,20 @@ This document outlines the implementation tasks for building Flappy Kiro. Tasks 
 
 ---
 
-### Task 6: Collision Detector
+### Task 6: Collision Detector ✅
 
 **Description**: Implement collision detection between ghost and pipes, and screen boundaries.
 
 **Acceptance Criteria**:
-- [ ] Create `src/collision.js` with CollisionDetector class
-- [ ] Detect collision with pipe sections using AABB
-- [ ] Detect collision with top screen boundary
-- [ ] Detect collision with bottom screen boundary
-- [ ] Implement `checkCollisions()` method
-- [ ] Implement `checkPipeCollision()` method
-- [ ] Implement `checkBoundaryCollision()` method
-- [ ] Verify collision detection accuracy (Property 6)
-- [ ] Test edge cases (ghost at exact boundary)
+- [x] Create `src/collision.js` with CollisionDetector class
+- [x] Detect collision with pipe sections using AABB
+- [x] Detect collision with top screen boundary
+- [x] Detect collision with bottom screen boundary
+- [x] Implement `checkCollisions()` method
+- [x] Implement `checkPipeCollision()` method
+- [x] Implement `checkBoundaryCollision()` method
+- [x] Verify collision detection accuracy (Property 6)
+- [x] Test edge cases (ghost at exact boundary)
 
 **Dependencies**: Task 4, Task 5
 
@@ -164,23 +164,23 @@ This document outlines the implementation tasks for building Flappy Kiro. Tasks 
 
 ---
 
-### Task 7: Score Tracker
+### Task 7: Score Tracker ✅
 
 **Description**: Implement score tracking system with high score persistence.
 
 **Acceptance Criteria**:
-- [ ] Create `src/score.js` with ScoreTracker class
-- [ ] Track current score (increments when passing pipes)
-- [ ] Track high score across sessions
-- [ ] Implement `update()` method to check pipe passes
-- [ ] Implement `getCurrentScore()` and `getHighScore()` methods
-- [ ] Implement `updateHighScore()` method
-- [ ] Implement `reset()` method
-- [ ] Load high score from localStorage on init
-- [ ] Save high score to localStorage when updated
-- [ ] Verify score increments once per pipe (Property 7)
-- [ ] Verify high score update logic (Property 8)
-- [ ] Handle localStorage unavailability gracefully
+- [x] Create `src/score.js` with ScoreTracker class
+- [x] Track current score (increments when passing pipes)
+- [x] Track high score across sessions
+- [x] Implement `update()` method to check pipe passes
+- [x] Implement `getCurrentScore()` and `getHighScore()` methods
+- [x] Implement `updateHighScore()` method
+- [x] Implement `reset()` method
+- [x] Load high score from localStorage on init
+- [x] Save high score to localStorage when updated
+- [x] Verify score increments once per pipe (Property 7)
+- [x] Verify high score update logic (Property 8)
+- [x] Handle localStorage unavailability gracefully
 
 **Dependencies**: Task 5
 
@@ -192,19 +192,19 @@ This document outlines the implementation tasks for building Flappy Kiro. Tasks 
 
 ---
 
-### Task 8: Input System
+### Task 8: Input System ✅
 
 **Description**: Implement input handling for mouse clicks and touch events.
 
 **Acceptance Criteria**:
-- [ ] Create `src/input.js` with InputSystem class
-- [ ] Listen for mouse click events
-- [ ] Listen for touch events
-- [ ] Register jump input on click/touch
-- [ ] Implement `getJumpInput()` method
-- [ ] Implement `reset()` method
-- [ ] Verify input is registered immediately
-- [ ] Test on both desktop and mobile
+- [x] Create `src/input.js` with InputSystem class
+- [x] Listen for mouse click events
+- [x] Listen for touch events
+- [x] Register jump input on click/touch
+- [x] Implement `getJumpInput()` method
+- [x] Implement `reset()` method
+- [x] Verify input is registered immediately
+- [x] Test on both desktop and mobile
 
 **Dependencies**: Task 1
 
@@ -216,21 +216,21 @@ This document outlines the implementation tasks for building Flappy Kiro. Tasks 
 
 ---
 
-### Task 9: Audio Engine
+### Task 9: Audio Engine ✅
 
 **Description**: Implement audio system using Web Audio API with fallback.
 
 **Acceptance Criteria**:
-- [ ] Create `src/audio.js` with AudioEngine class
-- [ ] Initialize Web Audio API context
-- [ ] Load jump.wav and game_over.wav
-- [ ] Implement `playSound()` method with volume control
-- [ ] Implement `setMasterVolume()` method
-- [ ] Implement `setMuted()` method
-- [ ] Provide fallback using HTML5 Audio elements
-- [ ] Handle audio context suspension (browser requirement)
-- [ ] Verify sounds play without blocking gameplay
-- [ ] Test on multiple browsers
+- [x] Create `src/audio.js` with AudioEngine class
+- [x] Initialize Web Audio API context
+- [x] Load jump.wav and game_over.wav
+- [x] Implement `playSound()` method with volume control
+- [x] Implement `setMasterVolume()` method
+- [x] Implement `setMuted()` method
+- [x] Provide fallback using HTML5 Audio elements
+- [x] Handle audio context suspension (browser requirement)
+- [x] Verify sounds play without blocking gameplay
+- [x] Test on multiple browsers
 
 **Dependencies**: Task 2
 

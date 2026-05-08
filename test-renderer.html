@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Renderer Visual Verification - Flappy Kiro</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+    
+    h1 {
+      color: #333;
+    }
+    
+    h2 {
+      color: #555;
+      margin-top: 30px;
+    }
+    
+    canvas {
+      border: 2px solid #333;
+      display: block;
+      margin: 10px 0;
+      background-color: white;
+    }
+    
+    .test-section {
+      margin-bottom: 40px;
+      padding: 20px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .checklist {
+      margin-top: 10px;
+      padding-left: 20px;
+    }
+    
+    .checklist li {
+      margin: 5px 0;
+      color: #666;
+    }
+    
+    .pass {
+      color: green;
+      font-weight: bold;
+    }
+    
+    .info {
+      background-color: #e3f2fd;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎮 Renderer Visual Verification</h1>
+  
+  <div class="info">
+    <strong>Instructions:</strong> This page visually tests the Renderer class. 
+    Check each canvas to verify that all elements are rendered correctly. 
+    Open the browser console to see detailed test results.
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 1: Menu State</h2>
+    <canvas id="canvas-menu"></canvas>
+    <ul class="checklist">
+      <li>✓ Light blue background (#87CEEB)</li>
+      <li>✓ "Flappy Kiro" title centered</li>
+      <li>✓ "Start Game" button with green background</li>
+      <li>✓ High score display at bottom</li>
+    </ul>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 2: Playing State</h2>
+    <canvas id="canvas-playing"></canvas>
+    <ul class="checklist">
+      <li>✓ Light blue background</li>
+      <li>✓ Green pipes with gaps</li>
+      <li>✓ Ghost sprite visible (32x32 pixels)</li>
+      <li>✓ Score displayed at top center</li>
+      <li>✓ Pixel-perfect rendering (no smoothing)</li>
+    </ul>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 3: Game Over State</h2>
+    <canvas id="canvas-gameover"></canvas>
+    <ul class="checklist">
+      <li>✓ Semi-transparent dark overlay</li>
+      <li>✓ "Game Over" text</li>
+      <li>✓ Final score display</li>
+      <li>✓ High score display</li>
+      <li>✓ "Restart" button</li>
+      <li>✓ Pipes and ghost still visible behind overlay</li>
+    </ul>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 4: Rendering Order</h2>
+    <canvas id="canvas-order"></canvas>
+    <ul class="checklist">
+      <li>✓ Background rendered first (back layer)</li>
+      <li>✓ Pipes rendered on top of background</li>
+      <li>✓ Ghost rendered on top of pipes</li>
+      <li>✓ Score/UI rendered on top of everything</li>
+    </ul>
+  </div>
+  
+  <div class="test-section">
+    <h2>Test 5: Different Screen Sizes</h2>
+    <p>Testing renderer on different canvas sizes:</p>
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <div>
+        <p><strong>Standard (800x600)</strong></p>
+        <canvas id="canvas-standard"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  <script type="module">
+    import { Renderer } from './src/renderer.js';
+    import { AssetLoader } from './src/assets.js';
+    import { GAME_STATE } from './src/constants.js';
+    
+    console.log('=== Renderer Visual Verification ===\n');
+    
+    async function init() {
+      console.log('Loading assets...');
+      
+      try {
+        await AssetLoader.loadAssets();
+        console.log('✓ Assets loaded successfully\n');
+      } catch (error) {
+        console.error('✗ Failed to load assets:', error);
+        document.body.innerHTML = '<h1 style="color: red;">Failed to load assets. Check console for details.</h1>';
+        return;
+      }
+      
+      // Test 1: Menu State
+      console.log('Test 1: Menu State');
+      const canvasMenu = document.getElementById('canvas-menu');
+      const rendererMenu = new Renderer(canvasMenu);
+      rendererMenu.render(GAME_STATE.MENU, { x: 100, y: 300 }, [], 0, 42);
+      console.log('✓ Menu state rendered\n');
+      
+      // Test 2: Playing State
+      console.log('Test 2: Playing State');
+      const canvasPlaying = document.getElementById('canvas-playing');
+      const rendererPlaying = new Renderer(canvasPlaying);
+      const pipes = [
+        { x: 400, topY: 150, gapY: 150, width: 80, gapSize: 120 },
+        { x: 600, topY: 200, gapY: 200, width: 80, gapSize: 120 },
+        { x: 800, topY: 100, gapY: 100, width: 80, gapSize: 120 }
+      ];
+      rendererPlaying.render(GAME_STATE.PLAYING, { x: 100, y: 300 }, pipes, 15, 42);
+      console.log('✓ Playing state rendered\n');
+      
+      // Test 3: Game Over State
+      console.log('Test 3: Game Over State');
+      const canvasGameOver = document.getElementById('canvas-gameover');
+      const rendererGameOver = new Renderer(canvasGameOver);
+      const pipesGameOver = [
+        { x: 400, topY: 150, gapY: 150, width: 80, gapSize: 120 },
+        { x: 600, topY: 200, gapY: 200, width: 80, gapSize: 120 }
+      ];
+      rendererGameOver.render(GAME_STATE.GAME_OVER, { x: 100, y: 300 }, pipesGameOver, 15, 42);
+      console.log('✓ Game Over state rendered\n');
+      
+      // Test 4: Rendering Order
+      console.log('Test 4: Rendering Order');
+      const canvasOrder = document.getElementById('canvas-order');
+      const rendererOrder = new Renderer(canvasOrder);
+      const pipesOrder = [
+        { x: 50, topY: 150, gapY: 150, width: 80, gapSize: 120 },
+        { x: 200, topY: 200, gapY: 200, width: 80, gapSize: 120 }
+      ];
+      // Ghost positioned to overlap with first pipe to verify layering
+      rendererOrder.render(GAME_STATE.PLAYING, { x: 90, y: 300 }, pipesOrder, 5, 10);
+      console.log('✓ Rendering order verified (ghost should be in front of pipes)\n');
+      
+      // Test 5: Standard size
+      console.log('Test 5: Different Screen Sizes');
+      const canvasStandard = document.getElementById('canvas-standard');
+      const rendererStandard = new Renderer(canvasStandard);
+      rendererStandard.render(GAME_STATE.PLAYING, { x: 100, y: 300 }, pipes, 20, 50);
+      console.log('✓ Standard size (800x600) rendered\n');
+      
+      console.log('=== All Visual Tests Complete ===');
+      console.log('Check the canvases above to verify visual appearance');
+    }
+    
+    init();
+  </script>
+</body>
+</html>

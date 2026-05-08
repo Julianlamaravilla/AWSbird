@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asset Loader Test Runner</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+      background-color: #1e1e1e;
+      color: #d4d4d4;
+    }
+    h1 {
+      color: #4ec9b0;
+    }
+    #console {
+      background-color: #252526;
+      padding: 15px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .success {
+      color: #4ec9b0;
+    }
+    .error {
+      color: #f48771;
+    }
+    .info {
+      color: #569cd6;
+    }
+  </style>
+</head>
+<body>
+  <h1>Asset Loader Test Runner</h1>
+  <div id="console"></div>
+
+  <script type="module">
+    import { runAssetLoaderTests } from './src/assets.test.js';
+
+    const consoleDiv = document.getElementById('console');
+
+    // Capture console output
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      const message = args.join(' ');
+      const span = document.createElement('span');
+      
+      if (message.includes('✓') || message.includes('PASSED')) {
+        span.className = 'success';
+      } else if (message.includes('✗') || message.includes('FAILED')) {
+        span.className = 'error';
+      } else if (message.includes('===')) {
+        span.className = 'info';
+      }
+      
+      span.textContent = message + '\n';
+      consoleDiv.appendChild(span);
+    };
+
+    console.error = function(...args) {
+      originalError.apply(console, args);
+      const message = args.join(' ');
+      const span = document.createElement('span');
+      span.className = 'error';
+      span.textContent = message + '\n';
+      consoleDiv.appendChild(span);
+    };
+
+    // Run tests
+    runAssetLoaderTests().then(results => {
+      console.log('\n✓ All tests completed!');
+    }).catch(error => {
+      console.error('\n✗ Test suite failed:', error);
+    });
+  </script>
+</body>
+</html>

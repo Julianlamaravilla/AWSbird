@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Input System Test - Flappy Kiro</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #2c3e50;
+      font-family: Arial, sans-serif;
+      color: white;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #87CEEB;
+    }
+
+    #testCanvas {
+      display: block;
+      background-color: #87CEEB;
+      border: 3px solid #4CAF50;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    #status {
+      background-color: #34495e;
+      padding: 20px;
+      border-radius: 8px;
+      min-width: 400px;
+      max-width: 600px;
+    }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+      padding: 8px;
+      background-color: #2c3e50;
+      border-radius: 4px;
+    }
+
+    .status-label {
+      font-weight: bold;
+    }
+
+    .status-value {
+      color: #4CAF50;
+    }
+
+    .status-value.active {
+      color: #FFD700;
+      font-weight: bold;
+    }
+
+    #instructions {
+      margin-top: 20px;
+      text-align: center;
+      color: #bdc3c7;
+    }
+
+    #log {
+      margin-top: 20px;
+      background-color: #1a1a1a;
+      padding: 15px;
+      border-radius: 8px;
+      max-width: 600px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .log-entry {
+      margin: 5px 0;
+      padding: 3px;
+    }
+
+    .log-click {
+      color: #4CAF50;
+    }
+
+    .log-touch {
+      color: #FFD700;
+    }
+
+    .log-reset {
+      color: #95a5a6;
+    }
+  </style>
+</head>
+<body>
+  <h1>Input System Test</h1>
+  
+  <canvas id="testCanvas" width="400" height="300"></canvas>
+  
+  <div id="status">
+    <div class="status-item">
+      <span class="status-label">Input System:</span>
+      <span class="status-value" id="systemStatus">Not Initialized</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Jump Input:</span>
+      <span class="status-value" id="jumpStatus">false</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Total Clicks:</span>
+      <span class="status-value" id="clickCount">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Total Touches:</span>
+      <span class="status-value" id="touchCount">0</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Latency:</span>
+      <span class="status-value" id="latency">N/A</span>
+    </div>
+  </div>
+  
+  <div id="instructions">
+    <p><strong>Instructions:</strong></p>
+    <p>Click or tap on the blue canvas to test input registration</p>
+    <p>Input should be registered immediately (same frame)</p>
+  </div>
+  
+  <div id="log">
+    <div class="log-entry">Event log will appear here...</div>
+  </div>
+
+  <script type="module">
+    import { InputSystem } from './src/input.js';
+
+    const canvas = document.getElementById('testCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const systemStatus = document.getElementById('systemStatus');
+    const jumpStatus = document.getElementById('jumpStatus');
+    const clickCount = document.getElementById('clickCount');
+    const touchCount = document.getElementById('touchCount');
+    const latencyDisplay = document.getElementById('latency');
+    const logContainer = document.getElementById('log');
+    
+    let clicks = 0;
+    let touches = 0;
+    let lastInputTime = 0;
+    
+    // Initialize input system
+    const input = new InputSystem(canvas);
+    input.init();
+    
+    systemStatus.textContent = 'Initialized';
+    systemStatus.classList.add('active');
+    
+    // Add log entry
+    function addLog(message, type = '') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+    
+    addLog('Input system initialized', 'reset');
+    
+    // Override input handlers to track events
+    const originalHandleClick = input.handleClick.bind(input);
+    const originalHandleTouch = input.handleTouchStart.bind(input);
+    
+    input.handleClick = function(event) {
+      const startTime = performance.now();
+      originalHandleClick(event);
+      const endTime = performance.now();
+      
+      clicks++;
+      clickCount.textContent = clicks;
+      
+      const latency = (endTime - startTime).toFixed(3);
+      latencyDisplay.textContent = `${latency}ms`;
+      
+      addLog(`Mouse click detected (latency: ${latency}ms)`, 'click');
+    };
+    
+    input.handleTouchStart = function(event) {
+      const startTime = performance.now();
+      originalHandleTouch(event);
+      const endTime = performance.now();
+      
+      touches++;
+      touchCount.textContent = touches;
+      
+      const latency = (endTime - startTime).toFixed(3);
+      latencyDisplay.textContent = `${latency}ms`;
+      
+      addLog(`Touch detected (latency: ${latency}ms)`, 'touch');
+    };
+    
+    // Draw instructions on canvas
+    function drawCanvas() {
+      ctx.fillStyle = '#87CEEB';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Click or Tap Here', canvas.width / 2, canvas.height / 2 - 20);
+      
+      ctx.font = '16px Arial';
+      ctx.fillText('to test input', canvas.width / 2, canvas.height / 2 + 20);
+      
+      // Draw visual feedback if input is registered
+      if (input.getJumpInput()) {
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 32px Arial';
+        ctx.fillText('INPUT REGISTERED!', canvas.width / 2, canvas.height / 2);
+      }
+    }
+    
+    // Game loop to check input and update display
+    function gameLoop() {
+      // Check if jump input is registered
+      const jumpInput = input.getJumpInput();
+      
+      // Update status display
+      jumpStatus.textContent = jumpInput ? 'true' : 'false';
+      if (jumpInput) {
+        jumpStatus.classList.add('active');
+      } else {
+        jumpStatus.classList.remove('active');
+      }
+      
+      // Draw canvas
+      drawCanvas();
+      
+      // Reset input after processing (simulating game loop behavior)
+      if (jumpInput) {
+        setTimeout(() => {
+          input.reset();
+          addLog('Input reset', 'reset');
+        }, 100); // Reset after 100ms for visual feedback
+      }
+      
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // Start game loop
+    gameLoop();
+    
+    addLog('Test ready - click or tap the canvas!', 'reset');
+  </script>
+</body>
+</html>
